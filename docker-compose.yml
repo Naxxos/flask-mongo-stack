@@ -68,6 +68,13 @@ services:
     build:
       context: nginx
       dockerfile: Dockerfile
+      args:
+      - http_proxy
+      - https_proxy
+      - no_proxy
+      - http_proxy_auth
+      - PYPI_URL=${PYPI_URL}
+      - PYPI_HOST=${PYPI_HOST}
     image: digitalocean.com/webserver:latest
     container_name: webserver
     restart: unless-stopped

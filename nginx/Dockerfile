@@ -1,5 +1,12 @@
 FROM alpine:latest
 
+ARG no_proxy
+ARG http_proxy
+ARG https_proxy
+ARG http_proxy_auth
+ARG PYPI_URL
+ARG PYPI_HOST
+
 RUN apk --update add nginx && \
     ln -sf /dev/stdout /var/log/nginx/access.log && \
     ln -sf /dev/stderr /var/log/nginx/error.log && \
