@@ -26,5 +26,4 @@ USER www
 
 EXPOSE 5000
 
-CMD [ "gunicorn", "-w", "2", "--bind", "0.0.0.0:5000", "wsgi"]
-
+ENTRYPOINT ["./boot.sh"]
