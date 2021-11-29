@@ -7,44 +7,48 @@ services:
     image: mongo:latest
     command: mongod --auth
     environment:
-      -  AUTH=yes
-      -  MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME:?err}
-      -  MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD:?err}
-      -  MONGO_INITDB_DATABASE=flaskdb
+      - AUTH=yes
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME:?err}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD:?err}
+      - MONGO_INITDB_DATABASE=flaskdb
     ports:
       - "27017:27017"
-    volumes:
-      - mongodbdata:/data/db
     networks:
       - backend
+    volumes:
+      - mongodbdata:/data/db
 
   mongo-express:
+    container_name: mongo-express
     image: mongo-express
     restart: always
     ports:
       - 8081:8081
     environment:
-      #ME_CONFIG_BASICAUTH_USERNAME: 
-      #ME_CONFIG_BASICAUTH_PASSWORD:
       ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_INITDB_ROOT_USERNAME:?err}
       ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:?err}
       ME_CONFIG_MONGODB_URL: ${ME_CONFIG_MONGODB_URL:?err}
-      # mongodb://admin:p%40ssw0rd@mongo:27017/
+    depends_on:
+      - mongo
+    networks:
+      - backend
 
   flask:
     build:
       context: app
       dockerfile: Dockerfile
       args:
-      - http_proxy
-      - https_proxy
-      - no_proxy
-      - http_proxy_auth
-      - PYPI_URL=${PYPI_URL}
-      - PYPI_HOST=${PYPI_HOST}
-
+        - http_proxy
+        - https_proxy
+        - no_proxy
+        - http_proxy_auth
+        - PYPI_URL
+        - PYPI_HOST
+    volumes:
+      - appdata:/var/www
+    ports:
+      - "5000:5000"
     container_name: flask
-    image: digitalocean.com/flask-python:3.6
     restart: unless-stopped
     environment:
       APP_ENV: "prod"
@@ -55,9 +59,6 @@ services:
       MONGODB_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:?err}
       MONGODB_HOSTNAME: mongo
       MONGODB_URL: ${ME_CONFIG_MONGODB_URL:?err}
-    
-    volumes:
-      - appdata:/var/www
     depends_on:
       - mongo
     networks:
@@ -69,29 +70,28 @@ services:
       context: nginx
       dockerfile: Dockerfile
       args:
-      - http_proxy
-      - https_proxy
-      - no_proxy
-      - http_proxy_auth
-      - PYPI_URL=${PYPI_URL}
-      - PYPI_HOST=${PYPI_HOST}
+        - http_proxy
+        - https_proxy
+        - no_proxy
+        - http_proxy_auth
+        - PYPI_URL=${PYPI_URL}
+        - PYPI_HOST=${PYPI_HOST}
     image: digitalocean.com/webserver:latest
     container_name: webserver
     restart: unless-stopped
     environment:
       APP_ENV: "prod"
       APP_NAME: "webserver"
-      APP_DEBUG: "false"
+      APP_DEBUG: "true"
       SERVICE_NAME: "webserver"
     ports:
       - "80:80"
-      - "443:443"
-    volumes:
-      - nginxdata:/var/log/nginx
     depends_on:
       - flask
     networks:
       - frontend
+    volumes:
+      - nginxdata:/var/log/nginx
 
 networks:
   frontend:
